@@ -5,7 +5,7 @@ import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import theme from "../theme";
 import { Box } from "@mui/material";
-import { Sidebar } from "../components";
+import { Sidebar, ChatWidget } from "../components";
 import "./globals.css";
 
 export default function RootLayout({
@@ -27,11 +27,11 @@ export default function RootLayout({
                   flexGrow: 1, 
                   p: 4, 
                   backgroundColor: "background.default",
-                  ml: "280px", // DRAWER_WIDTH
                 }}
               >
                 {children}
               </Box>
+              <ChatWidget />
             </Box>
           </ThemeProvider>
         </Provider>

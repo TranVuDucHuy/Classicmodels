@@ -28,6 +28,8 @@ class Order(Base):
     __tablename__ = "orders"
     orderNumber = Column(Integer, primary_key=True)
     orderDate = Column(Date, nullable=False)
+    shippedDate = Column(Date)
+    status = Column(String(15), nullable=False)
     customerNumber = Column(Integer, ForeignKey("customers.customerNumber"), nullable=False)
     details = relationship("OrderDetail", back_populates="order")
 

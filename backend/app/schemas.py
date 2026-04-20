@@ -31,3 +31,41 @@ class ChartPoint(BaseModel):
 
 class ChartResponse(BaseModel):
     data: list[ChartPoint]
+
+# --- New Analysis Schemas ---
+class TopCustomerResponse(BaseModel):
+    name: str
+    revenue: float
+
+class OrderStatusResponse(BaseModel):
+    status: str
+    count: int
+
+class LatencyPoint(BaseModel):
+    label: str
+    avgDays: float
+
+class RetentionPoint(BaseModel):
+    bucket: str
+    count: int
+
+# --- Order Lookup Schemas ---
+class OrderSearchItem(BaseModel):
+    orderNumber: int
+    orderDate: str
+    shippedDate: Optional[str] = None
+    status: str
+    customerName: str
+    totalAmount: float
+
+class OrderSearchResponse(BaseModel):
+    items: List[OrderSearchItem]
+    total: int
+
+# --- Chatbot Schemas ---
+class ChatRequest(BaseModel):
+    message: str
+
+class ChatResponse(BaseModel):
+    response: str
+    sql: Optional[str] = None

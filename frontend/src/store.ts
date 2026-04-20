@@ -35,6 +35,36 @@ export const classicModelsApi = createApi({
       }),
       providesTags: ["Revenue"],
     }),
+    getTopCustomers: builder.query<any[], void>({
+      query: () => "/revenue/top-customers",
+      providesTags: ["Revenue"],
+    }),
+    getOrderStatus: builder.query<any[], void>({
+      query: () => "/revenue/order-status",
+      providesTags: ["Revenue"],
+    }),
+    getShippingLatency: builder.query<any[], void>({
+      query: () => "/revenue/latency",
+      providesTags: ["Revenue"],
+    }),
+    getCustomerRetention: builder.query<any[], void>({
+      query: () => "/revenue/retention",
+      providesTags: ["Revenue"],
+    }),
+    searchOrders: builder.query<any, { customerName?: string, startDate?: string, endDate?: string }>({
+      query: (params) => ({
+        url: "/orders/search",
+        params,
+      }),
+      providesTags: ["Revenue"],
+    }),
+    askChatbot: builder.mutation<{ response: string, sql?: string }, { message: string }>({
+      query: (body) => ({
+        url: "/chat",
+        method: "POST",
+        body,
+      }),
+    }),
   }),
 });
 

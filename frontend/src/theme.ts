@@ -9,23 +9,27 @@ const inter = Inter({
 
 const theme = createTheme({
   palette: {
-    mode: "dark",
+    mode: "light",
     primary: {
-      main: "#6366f1", // Indigo
+      main: "#0284c7", // Azure Blue
     },
     secondary: {
-      main: "#ec4899", // Pink
+      main: "#db2777",
     },
     background: {
-      default: "#0f1117",
-      paper: "#1a1d27",
+      default: "#f8fafc", // Màu slate nhạt rất sang
+      paper: "#ffffff",
+    },
+    text: {
+      primary: "#1e293b",
+      secondary: "#64748b",
     },
   },
   typography: {
     fontFamily: inter.style.fontFamily,
   },
   shape: {
-    borderRadius: 12,
+    borderRadius: 4,
   },
   components: {
     MuiButton: {

@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
 from ..database import get_db
-from ..models import Order, OrderDetail, Product
-from ..schemas import PivotResponse, PivotItem, ChartResponse, ChartPoint
+from ..models import Order, OrderDetail, Product, Customer
+from ..schemas import PivotResponse, PivotItem, ChartResponse, ChartPoint, TopCustomerResponse, OrderStatusResponse, LatencyPoint, RetentionPoint
 from typing import List
 
 router = APIRouter()
@@ -53,7 +53,8 @@ def get_chart_revenue(
          .group_by(extract('month', Order.orderDate)) \
          .order_by("month_num") \
          .all()
-        data = [ChartPoint(label=f"T{int(r.month_num)}", revenue=float(r.revenue)) for r in results]
+        months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        data = [ChartPoint(label=months[int(r.month_num) - 1], revenue=float(r.revenue)) for r in results]
         
     return ChartResponse(data=data)
 
@@ -61,3 +62,69 @@ def get_chart_revenue(
 def get_revenue_years(db: Session = Depends(get_db)):
     years = db.query(extract('year', Order.orderDate).distinct()).order_by(extract('year', Order.orderDate)).all()
     return [int(y[0]) for y in years]
+
+@router.get("/top-customers", response_model=List[TopCustomerResponse])
+def get_top_customers(db: Session = Depends(get_db)):
+    results = db.query(
+        Customer.customerName.label("name"),
+        func.sum(OrderDetail.quantityOrdered * OrderDetail.priceEach).label("revenue")
+    ).join(Order, Customer.customerNumber == Order.customerNumber) \
+     .join(OrderDetail, Order.orderNumber == OrderDetail.orderNumber) \
+     .group_by(Customer.customerName) \
+     .order_by(func.sum(OrderDetail.quantityOrdered * OrderDetail.priceEach).desc()) \
+     .limit(10) \
+     .all()
+    
+    return [TopCustomerResponse(name=r.name, revenue=float(r.revenue)) for r in results]
+
+@router.get("/order-status", response_model=List[OrderStatusResponse])
+def get_order_status(db: Session = Depends(get_db)):
+    results = db.query(
+        Order.status.label("status"),
+        func.count(Order.orderNumber).label("count")
+    ).group_by(Order.status) \
+     .all()
+    
+    return [OrderStatusResponse(status=r.status, count=r.count) for r in results]
+
+@router.get("/latency", response_model=List[LatencyPoint])
+def get_shipping_latency(db: Session = Depends(get_db)):
+    results = db.query(
+        extract('year', Order.orderDate).label("year"),
+        extract('month', Order.orderDate).label("month"),
+        func.avg(func.datediff(Order.shippedDate, Order.orderDate)).label("avg_days")
+    ).filter(Order.shippedDate.isnot(None)) \
+     .group_by("year", "month") \
+     .order_by("year", "month") \
+     .all()
+    
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    return [
+        LatencyPoint(
+            label=f"{months[int(r.month)-1]} {int(r.year)}",
+            avgDays=round(float(r.avg_days), 1)
+        ) for r in results
+    ]
+
+@router.get("/retention", response_model=List[RetentionPoint])
+def get_customer_retention(db: Session = Depends(get_db)):
+    subquery = db.query(
+        Order.customerNumber,
+        func.count(Order.orderNumber).label("order_count")
+    ).group_by(Order.customerNumber).subquery()
+    
+    results = db.query(
+        subquery.c.order_count,
+        func.count().label("customer_count")
+    ).group_by(subquery.c.order_count).all()
+    
+    buckets = {"1 Order": 0, "2-3 Orders": 0, "4+ Orders": 0}
+    for r in results:
+        if r.order_count == 1:
+            buckets["1 Order"] += r.customer_count
+        elif 2 <= r.order_count <= 3:
+            buckets["2-3 Orders"] += r.customer_count
+        else:
+            buckets["4+ Orders"] += r.customer_count
+            
+    return [RetentionPoint(bucket=k, count=v) for k, v in buckets.items()]
